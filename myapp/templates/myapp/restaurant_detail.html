@@ -1,0 +1,116 @@
+{% extends "myapp/base.html" %}
+
+{% block title %}{{ restaurant.name }} – FlavorMap{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'myapp:home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'myapp:restaurant_list' %}">Restaurants</a></li>
+        <li class="breadcrumb-item active">{{ restaurant.name }}</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <!-- Main Info -->
+    <div class="col-lg-8">
+        <div class="card p-4">
+            {% if restaurant.image_url %}
+            <img src="{{ restaurant.image_url }}" class="rounded mb-3" alt="{{ restaurant.name }}" style="width:100%;max-height:350px;object-fit:cover;">
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h1 class="fw-bold mb-0">{{ restaurant.name }}</h1>
+                <span class="price-badge fs-4">{{ restaurant.price_range }}</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="badge bg-primary"><i class="bi bi-tag"></i> {{ restaurant.category.name }}</span>
+                <span class="badge bg-secondary"><i class="bi bi-geo-alt"></i> {{ restaurant.location }}</span>
+                {% if avg_rating %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> {{ avg_rating }}/5</span>
+                {% endif %}
+            </div>
+
+            <p class="lead">{{ restaurant.description }}</p>
+        </div>
+
+        <!-- Reviews -->
+        <div class="card p-4 mt-4">
+            <h3 class="fw-bold mb-3"><i class="bi bi-chat-quote"></i> Reviews</h3>
+            {% if reviews %}
+                {% for review in reviews %}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ review.author_name }}</strong>
+                        <span class="rating-stars">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                    </div>
+                    {% if review.comment %}
+                    <p class="mb-1 mt-1">{{ review.comment }}</p>
+                    {% endif %}
+                    <small class="text-muted">{{ review.created_at|date:"d M Y" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No reviews yet. Be the first to leave a review!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-info-circle"></i> Information</h5>
+            <ul class="list-unstyled">
+                <li class="mb-3">
+                    <i class="bi bi-geo-alt text-danger"></i>
+                    <strong>Address</strong><br>
+                    <span class="text-muted">{{ restaurant.address }}</span>
+                </li>
+                {% if restaurant.phone %}
+                <li class="mb-3">
+                    <i class="bi bi-telephone text-success"></i>
+                    <strong>Phone</strong><br>
+                    <span class="text-muted">{{ restaurant.phone }}</span>
+                </li>
+                {% endif %}
+                <li class="mb-3">
+                    <i class="bi bi-tag text-primary"></i>
+                    <strong>Category</strong><br>
+                    <span class="text-muted">{{ restaurant.category.name }}</span>
+                </li>
+                <li class="mb-3">
+                    <i class="bi bi-pin-map text-info"></i>
+                    <strong>Location</strong><br>
+                    <span class="text-muted">{{ restaurant.location }}</span>
+                </li>
+                <li class="mb-3">
+                    <i class="bi bi-cash text-warning"></i>
+                    <strong>Price Range</strong><br>
+                    <span class="text-muted">{{ restaurant.get_price_range_display }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card p-4 mt-3 text-center">
+            <p class="mb-2 fw-semibold">Average Rating</p>
+            {% if avg_rating %}
+                <span class="display-5 fw-bold" style="color:var(--fm-primary)">{{ avg_rating }}</span>
+                <span class="text-muted">/5</span>
+                <p class="small text-muted mt-1">{{ reviews|length }} review{{ reviews|length|pluralize }}</p>
+            {% else %}
+                <span class="text-muted">No ratings yet</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "myapp/base.html" %}
+
+{% block title %}About – FlavorMap{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card p-5">
+            <h1 class="fw-bold mb-4"><i class="bi bi-info-circle"></i> About FlavorMap</h1>
+
+            <p class="lead">FlavorMap is a restaurant review and discovery platform designed to help food lovers find their next great meal.</p>
+
+            <hr>
+
+            <h4 class="fw-bold mt-4">Our Mission</h4>
+            <p>We believe everyone deserves to enjoy amazing food. FlavorMap brings together restaurant information, honest reviews, and local knowledge to make dining decisions easier and more enjoyable.</p>
+
+            <h4 class="fw-bold mt-4">Features</h4>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-search fs-4 text-primary me-3"></i>
+                        <div>
+                            <h6 class="fw-bold">Smart Search</h6>
+                            <p class="small text-muted">Filter restaurants by category, price, and location.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-star fs-4 text-warning me-3"></i>
+                        <div>
+                            <h6 class="fw-bold">Honest Reviews</h6>
+                            <p class="small text-muted">Real ratings from real diners to guide your choices.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-geo-alt fs-4 text-danger me-3"></i>
+                        <div>
+                            <h6 class="fw-bold">Local Discovery</h6>
+                            <p class="small text-muted">Explore restaurants in specific neighborhoods and districts.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-grid fs-4 text-success me-3"></i>
+                        <div>
+                            <h6 class="fw-bold">Category Browsing</h6>
+                            <p class="small text-muted">From Turkish cuisine to Italian, Fast Food to Fine Dining.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="mt-4">
+            <p class="text-muted small text-center mb-0">
+                FlavorMap &mdash; CSE 220 Web Programming &middot; Milestone 2 Project
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

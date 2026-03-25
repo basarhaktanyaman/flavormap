@@ -1,0 +1,77 @@
+# 5x5 MAZE SOLVER USING BACKTRACKING
+# 0 = free path, 1 = wall
+
+def is_safe(maze, x, y, visited):
+    """Check if a cell is inside the maze, not a wall, and not yet visited."""
+    n = len(maze)
+    return 0 <= x < n and 0 <= y < n and maze[x][y] == 0 and not visited[x][y]
+
+
+def solve_maze_backtrack(maze, x, y, goal_x, goal_y, visited, path):
+    """Backtracking algorithm to solve the maze recursively."""
+    # Print the current path at each step
+    print("Current path:", path)
+
+    # Base case: goal reached
+    if (x, y) == (goal_x, goal_y):
+        path.append((x, y))
+        print("Goal reached! Final path:", path)
+        return True
+
+    if is_safe(maze, x, y, visited):
+        visited[x][y] = True
+        path.append((x, y))
+
+        # Explore all four directions: down, right, up, left
+        moves = [(1,0), (0,1), (-1,0), (0,-1)]
+        for dx, dy in moves:
+            if solve_maze_backtrack(maze, x+dx, y+dy, goal_x, goal_y, visited, path):
+                return True
+
+        # Backtrack if no direction works
+        path.pop()
+        visited[x][y] = False
+
+    return False
+
+
+def print_solution(maze, path):
+    """Print the maze with the solution path marked by '*'."""
+    n = len(maze)
+    for i in range(n):
+        row = []
+        for j in range(n):
+            if (i, j) in path:
+                row.append('*')
+            elif maze[i][j] == 1:
+                row.append('#')
+            else:
+                row.append('.')
+        print(' '.join(row))
+    print()
+
+
+# --- MAIN EXECUTION ---
+
+maze = [
+    [0, 1, 0, 0, 0],
+    [0, 0, 0, 1, 0],
+    [1, 1, 0, 1, 0],
+    [0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 0]
+]
+
+start = (0, 0)
+goal = (4, 4)
+
+visited = [[False]*5 for _ in range(5)]
+path = []
+
+if solve_maze_backtrack(maze, start[0], start[1], goal[0], goal[1], visited, path):
+    print("\nPath found successfully!")
+    print("Final path coordinates:", path)
+    print("\nMaze with solution path:")
+    print_solution(maze, path)
+else:
+    print("No path exists from Start to Goal.")
+

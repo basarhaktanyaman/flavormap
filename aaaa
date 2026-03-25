@@ -1,0 +1,67 @@
+from typing import List, Tuple
+
+
+def fibonacci_search_with_comparisons(arr: List[int], target: int) -> Tuple[int, int]:
+    """Fibonacci Search on sorted arr; returns (index or -1, num_comparisons).
+
+    Counts only comparisons of the form arr[idx] ? target.
+    """
+    n = len(arr)
+    if n == 0:
+        return -1, 0
+
+
+    fib_mm2 = 0  
+    fib_mm1 = 1  
+    fib_m = fib_mm2 + fib_mm1
+
+    while fib_m < n:
+        fib_mm2, fib_mm1 = fib_mm1, fib_m
+        fib_m = fib_mm2 + fib_mm1
+
+    offset = -1
+    comparisons = 0
+
+    while fib_m > 1:
+        i = min(offset + fib_mm2, n - 1)
+
+        comparisons += 1
+        if arr[i] < target:
+            fib_m = fib_mm1
+            fib_mm1 = fib_mm2
+            fib_mm2 = fib_m - fib_mm1
+            offset = i
+            continue
+
+        comparisons += 1
+        if arr[i] > target:
+            fib_m = fib_mm2
+            fib_mm1 = fib_mm1 - fib_mm2
+            fib_mm2 = fib_m - fib_mm1
+            continue
+
+        return i, comparisons
+
+    if fib_mm1 and offset + 1 < n:
+        comparisons += 1
+        if arr[offset + 1] == target:
+            return offset + 1, comparisons
+
+    return -1, comparisons
+
+
+def run_benchmark() -> None:
+    sizes = [100, 1000, 10000, 50000]
+    print("Fibonacci Search comparison counts (arr is [0..n-1])")
+    print("Size\tFound(last)\tNotFound(n+1)")
+    for n in sizes:
+        arr = list(range(n))
+        _, cmp_found = fibonacci_search_with_comparisons(arr, n - 1)
+        _, cmp_not_found = fibonacci_search_with_comparisons(arr, n + 1)
+        print(f"{n}\t{cmp_found}\t\t{cmp_not_found}")
+
+
+if __name__ == "__main__":
+    run_benchmark()
+
+

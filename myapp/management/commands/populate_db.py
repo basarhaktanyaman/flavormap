@@ -3,18 +3,18 @@ from myapp.models import Category, Location, Restaurant, Review
 
 
 class Command(BaseCommand):
-    help = "Populate the database with sample FlavorMap data"
+    help = "Populate the database with sample FinDish data"
 
     def handle(self, *args, **options):
-        self.stdout.write("Seeding FlavorMap database...")
+        self.stdout.write("Seeding FinDish database...")
 
         # --- Categories ---
         categories_data = [
             {"name": "Turkish", "description": "Traditional Turkish cuisine", "icon": "bi-cup-hot"},
-            {"name": "Italian", "description": "Pizza, pasta, and Mediterranean flavors", "icon": "bi-egg-fried"},
-            {"name": "Fast Food", "description": "Quick bites and street food", "icon": "bi-lightning"},
-            {"name": "Seafood", "description": "Fresh fish and ocean delights", "icon": "bi-water"},
-            {"name": "Asian", "description": "Far East culinary traditions", "icon": "bi-fan"},
+            {"name": "Italian", "description": "Pizza, pasta, and Mediterranean flavors", "icon": "bi-globe-europe-africa"},
+            {"name": "Fast Food", "description": "Quick bites and street food", "icon": "bi-lightning-fill"},
+            {"name": "Seafood", "description": "Fresh fish and ocean delights", "icon": "bi-tsunami"},
+            {"name": "Asian", "description": "Far East culinary traditions", "icon": "bi-globe-asia-australia"},
         ]
         categories = {}
         for data in categories_data:

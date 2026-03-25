@@ -1,6 +1,6 @@
 {% extends "myapp/base.html" %}
 
-{% block title %}{{ restaurant.name }} – FlavorMap{% endblock %}
+{% block title %}{{ restaurant.name }} – FinDish{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -38,7 +38,7 @@
 
         <!-- Reviews -->
         <div class="card p-4 mt-4">
-            <h3 class="fw-bold mb-3"><i class="bi bi-chat-quote"></i> Reviews</h3>
+            <h3 class="fw-bold mb-3"><i class="bi bi-chat-left-quote"></i> Reviews</h3>
             {% if reviews %}
                 {% for review in reviews %}
                 <div class="border-bottom pb-3 mb-3">

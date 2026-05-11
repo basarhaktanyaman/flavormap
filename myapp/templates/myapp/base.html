@@ -59,6 +59,9 @@
                 </li>
                 {% if user.is_authenticated %}
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'myapp:favorites_list' %}"><i class="bi bi-heart-fill" style="color:var(--fm-primary)"></i> Favorites</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'myapp:restaurant_create' %}">
                             <i class="bi bi-plus-circle"></i>
                             {% if user.is_staff %}Add Restaurant{% else %}Submit Restaurant{% endif %}
@@ -70,6 +73,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'myapp:profile' %}"><i class="bi bi-person"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'myapp:favorites_list' %}"><i class="bi bi-heart"></i> My Favorites</a></li>
                             {% if user.is_staff %}
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-gear"></i> Admin Panel</a></li>
                             {% endif %}

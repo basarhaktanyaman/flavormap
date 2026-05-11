@@ -4,12 +4,14 @@ from django.utils.html import format_html
 
 from .models import (
     Category,
+    Favorite,
     Location,
     MenuItem,
     OpeningHours,
     Profile,
     Restaurant,
     Review,
+    ReviewReply,
 )
 
 
@@ -29,6 +31,7 @@ class LocationAdmin(admin.ModelAdmin):
 class ReviewInline(admin.TabularInline):
     model = Review
     extra = 0
+    fields = ("user", "author_name", "rating", "comment", "created_at")
     readonly_fields = ("created_at",)
 
 
@@ -93,9 +96,15 @@ class RestaurantAdmin(admin.ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ["restaurant", "author_name", "rating", "created_at"]
+    list_display = ["restaurant", "display_author", "rating", "created_at"]
     list_filter = ["rating"]
-    search_fields = ["author_name", "comment"]
+    search_fields = ["author_name", "user__username", "comment"]
+
+
+@admin.register(ReviewReply)
+class ReviewReplyAdmin(admin.ModelAdmin):
+    list_display = ["review", "user", "created_at"]
+    search_fields = ["comment"]
 
 
 @admin.register(MenuItem)
@@ -109,6 +118,12 @@ class MenuItemAdmin(admin.ModelAdmin):
 class OpeningHoursAdmin(admin.ModelAdmin):
     list_display = ["restaurant", "get_day_display", "open_time", "close_time", "is_closed"]
     list_filter = ["day", "is_closed"]
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ["user", "restaurant", "created_at"]
+    search_fields = ["user__username", "restaurant__name"]
 
 
 @admin.register(Profile)

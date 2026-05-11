@@ -2,31 +2,51 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
+from django.db.models import Avg, Count, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import (
     MenuItemForm,
+    OpeningHoursForm,
     ProfileForm,
     RestaurantForm,
+    ReviewForm,
+    ReviewReplyForm,
     UserRegistrationForm,
 )
-from .models import Category, MenuItem, OpeningHours, Profile, Restaurant
+from .models import (
+    Category,
+    Favorite,
+    MenuItem,
+    OpeningHours,
+    Profile,
+    Restaurant,
+    Review,
+    ReviewReply,
+)
 
 
 # ----- Helpers ----------------------------------------------------------------
 
 
-def _visible_restaurants():
+def _restaurant_queryset():
+    """Base queryset with rating annotations (no visibility filter)."""
+    return (
+        Restaurant.objects.select_related("category", "location", "owner")
+        .annotate(avg_rating=Avg("reviews__rating"), n_reviews=Count("reviews"))
+    )
+
+
+def _visible_restaurants(user=None):
     """Public-facing queryset: only verified restaurants are listed.
 
     Staff still manage pending entries through the /admin/ panel and via direct
     detail URLs (handled by _can_view_restaurant), not through public listings.
     """
-    return Restaurant.objects.select_related("category", "location", "owner").filter(
-        is_verified=True
-    )
+    return _restaurant_queryset().filter(is_verified=True)
 
 
 def _owner_required(restaurant, user):
@@ -49,22 +69,34 @@ def _can_view_restaurant(restaurant, user):
 
 
 def home(request):
-    featured_restaurants = _visible_restaurants()[:6]
+    base_qs = _visible_restaurants(request.user)
+    top_rated = base_qs.filter(n_reviews__gt=0).order_by("-avg_rating", "-n_reviews")[:6]
+    newest = base_qs.order_by("-created_at")[:6]
     categories = Category.objects.all()
     context = {
-        "featured_restaurants": featured_restaurants,
+        "top_rated": top_rated,
+        "newest": newest,
         "categories": categories,
     }
     return render(request, "myapp/home.html", context)
 
 
 def restaurant_list(request):
-    restaurants = _visible_restaurants()
+    restaurants = _visible_restaurants(request.user)
 
+    q = request.GET.get("q", "").strip()
     category_id = request.GET.get("category", "")
     city = request.GET.get("city", "").strip()
     price = request.GET.get("price", "")
+    sort = request.GET.get("sort", "")
 
+    if q:
+        restaurants = restaurants.filter(
+            Q(name__icontains=q)
+            | Q(description__icontains=q)
+            | Q(location__city__icontains=q)
+            | Q(location__district__icontains=q)
+        )
     if category_id:
         restaurants = restaurants.filter(category_id=category_id)
     if city:
@@ -72,35 +104,59 @@ def restaurant_list(request):
     if price:
         restaurants = restaurants.filter(price_range=price)
 
+    if sort == "rating":
+        restaurants = restaurants.order_by("-avg_rating", "-n_reviews")
+    elif sort == "newest":
+        restaurants = restaurants.order_by("-created_at")
+    elif sort == "name":
+        restaurants = restaurants.order_by("name")
+
     categories = Category.objects.all()
     context = {
         "restaurants": restaurants,
         "categories": categories,
+        "q": q,
         "selected_category": category_id,
         "selected_city": city,
         "selected_price": price,
+        "selected_sort": sort,
     }
     return render(request, "myapp/restaurant_list.html", context)
 
 
 def restaurant_detail(request, pk):
-    restaurant = get_object_or_404(
-        Restaurant.objects.select_related("category", "location", "owner"),
-        pk=pk,
-    )
+    restaurant = get_object_or_404(_restaurant_queryset(), pk=pk)
     if not _can_view_restaurant(restaurant, request.user):
         return HttpResponseForbidden(
             "This restaurant is awaiting admin verification and is not publicly visible yet."
         )
-    reviews = restaurant.reviews.all()
+    reviews = (
+        restaurant.reviews.select_related("user")
+        .prefetch_related("replies__user")
+        .all()
+    )
     menu_items = restaurant.menu_items.all()
     opening_hours = restaurant.opening_hours.all()
+
+    user_review = None
+    is_favorite = False
+    if request.user.is_authenticated:
+        user_review = restaurant.reviews.filter(user=request.user).first()
+        is_favorite = Favorite.objects.filter(user=request.user, restaurant=restaurant).exists()
+
+    review_form = ReviewForm(instance=user_review)
+    reply_form = ReviewReplyForm()
+
     context = {
         "restaurant": restaurant,
         "reviews": reviews,
         "avg_rating": restaurant.average_rating(),
         "menu_items": menu_items,
         "opening_hours": opening_hours,
+        "user_review": user_review,
+        "is_favorite": is_favorite,
+        "review_form": review_form,
+        "reply_form": reply_form,
         "can_edit": request.user.is_authenticated and _owner_required(restaurant, request.user),
     }
     return render(request, "myapp/restaurant_detail.html", context)
@@ -212,6 +268,59 @@ def restaurant_delete(request, pk):
     return render(request, "myapp/restaurant_confirm_delete.html", {"restaurant": restaurant})
 
 
+# ----- Reviews ----------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def review_create_or_update(request, pk):
+    restaurant = get_object_or_404(Restaurant, pk=pk)
+    existing = Review.objects.filter(restaurant=restaurant, user=request.user).first()
+    form = ReviewForm(request.POST, instance=existing)
+    if form.is_valid():
+        try:
+            with transaction.atomic():
+                review = form.save(commit=False)
+                review.restaurant = restaurant
+                review.user = request.user
+                review.save()
+        except IntegrityError:
+            messages.error(request, "You have already reviewed this restaurant.")
+            return redirect("myapp:restaurant_detail", pk=pk)
+        messages.success(request, "Your review has been saved.")
+    else:
+        messages.error(request, "Please correct the errors in your review.")
+    return redirect("myapp:restaurant_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def review_delete(request, review_id):
+    review = get_object_or_404(Review, pk=review_id)
+    if review.user_id != request.user.id and not request.user.is_superuser:
+        return HttpResponseForbidden("You can only delete your own review.")
+    restaurant_id = review.restaurant_id
+    review.delete()
+    messages.success(request, "Your review has been removed.")
+    return redirect("myapp:restaurant_detail", pk=restaurant_id)
+
+
+@login_required
+@require_POST
+def review_reply(request, review_id):
+    review = get_object_or_404(Review, pk=review_id)
+    form = ReviewReplyForm(request.POST)
+    if form.is_valid():
+        reply = form.save(commit=False)
+        reply.review = review
+        reply.user = request.user
+        reply.save()
+        messages.success(request, "Reply posted.")
+    else:
+        messages.error(request, "Reply could not be saved.")
+    return redirect("myapp:restaurant_detail", pk=review.restaurant_id)
+
+
 # ----- Menu items -------------------------------------------------------------
 
 
@@ -285,6 +394,7 @@ def opening_hours_edit(request, pk):
         try:
             with transaction.atomic():
                 for day_value, _ in days:
+                    instance = existing_by_day.get(day_value)
                     prefix = f"day_{day_value}"
                     is_closed = request.POST.get(f"{prefix}_is_closed") == "on"
                     open_time = request.POST.get(f"{prefix}_open") or None
@@ -325,6 +435,32 @@ def opening_hours_edit(request, pk):
     )
 
 
+# ----- Favorites --------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def favorite_toggle(request, pk):
+    restaurant = get_object_or_404(Restaurant, pk=pk)
+    fav, created = Favorite.objects.get_or_create(user=request.user, restaurant=restaurant)
+    if not created:
+        fav.delete()
+        messages.info(request, f"Removed '{restaurant.name}' from favorites.")
+    else:
+        messages.success(request, f"Added '{restaurant.name}' to favorites.")
+    next_url = request.POST.get("next") or reverse("myapp:restaurant_detail", args=[pk])
+    return redirect(next_url)
+
+
+@login_required
+def favorites_list(request):
+    favorites = (
+        Favorite.objects.filter(user=request.user)
+        .select_related("restaurant__category", "restaurant__location")
+    )
+    return render(request, "myapp/favorites.html", {"favorites": favorites})
+
+
 # ----- Profile ----------------------------------------------------------------
 
 
@@ -341,6 +477,16 @@ def profile(request):
     else:
         form = ProfileForm(instance=profile_obj)
 
+    user_reviews = (
+        Review.objects.filter(user=request.user)
+        .select_related("restaurant")
+        .order_by("-created_at")
+    )
+    favorites = (
+        Favorite.objects.filter(user=request.user)
+        .select_related("restaurant")
+        .order_by("-created_at")
+    )
     owned = Restaurant.objects.filter(owner=request.user).order_by("-created_at")
     pending = owned.filter(is_verified=False)
     published = owned.filter(is_verified=True)
@@ -351,6 +497,8 @@ def profile(request):
         {
             "form": form,
             "profile_obj": profile_obj,
+            "user_reviews": user_reviews,
+            "favorites": favorites,
             "owned": owned,
             "pending": pending,
             "published": published,

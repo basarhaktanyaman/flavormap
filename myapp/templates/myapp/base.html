@@ -44,7 +44,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
-            <ul class="navbar-nav ms-auto">
+            <ul class="navbar-nav ms-auto align-items-lg-center">
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'myapp:home' %}"><i class="bi bi-house-door"></i> Home</a>
                 </li>
@@ -57,9 +57,43 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'myapp:contact' %}"><i class="bi bi-envelope"></i> Contact</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'admin:index' %}"><i class="bi bi-gear"></i> Admin</a>
-                </li>
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'myapp:favorites_list' %}"><i class="bi bi-heart-fill" style="color:var(--fm-primary)"></i> Favorites</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'myapp:restaurant_create' %}">
+                            <i class="bi bi-plus-circle"></i>
+                            {% if user.is_staff %}Add Restaurant{% else %}Submit Restaurant{% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'myapp:profile' %}"><i class="bi bi-person"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'myapp:favorites_list' %}"><i class="bi bi-heart"></i> My Favorites</a></li>
+                            {% if user.is_staff %}
+                            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-gear"></i> Admin Panel</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{% url 'logout' %}" class="px-3">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-link p-0 text-danger"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-fm btn-sm ms-lg-2" href="{% url 'register' %}"><i class="bi bi-person-plus"></i> Sign Up</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </div>
@@ -67,6 +101,16 @@
 
 <!-- Content -->
 <main class="container py-4">
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
     {% block content %}{% endblock %}
 </main>
 

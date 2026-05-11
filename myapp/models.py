@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
 
@@ -89,16 +89,67 @@ class Restaurant(models.Model):
 
 class Review(models.Model):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="reviews")
-    author_name = models.CharField(max_length=100)
-    rating = models.PositiveSmallIntegerField(choices=[(i, str(i)) for i in range(1, 6)])
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+        null=True,
+        blank=True,
+    )
+    author_name = models.CharField(max_length=100, blank=True, help_text="Legacy field; new reviews use the user FK")
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        choices=[(i, str(i)) for i in range(1, 6)],
+    )
     comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["restaurant", "user"],
+                condition=models.Q(user__isnull=False),
+                name="unique_user_review_per_restaurant",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.display_author()} – {self.restaurant.name} ({self.rating}/5)"
+
+    def display_author(self):
+        if self.user_id:
+            return self.user.get_username()
+        return self.author_name or "Anonymous"
+
+
+class ReviewReply(models.Model):
+    """A single-level reply to a review (e.g. owner responses)."""
+
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="replies")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="review_replies")
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Reply by {self.user} on review #{self.review_id}"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites")
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="favorited_by")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
+        unique_together = ["user", "restaurant"]
 
     def __str__(self):
-        return f"{self.author_name} – {self.restaurant.name} ({self.rating}/5)"
+        return f"{self.user} ♥ {self.restaurant}"
 
 
 class MenuItem(models.Model):

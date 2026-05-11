@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import MenuItem, OpeningHours, Profile, Restaurant
+from .models import MenuItem, OpeningHours, Profile, Restaurant, Review, ReviewReply
 
 User = get_user_model()
 
@@ -69,4 +69,23 @@ class OpeningHoursForm(forms.ModelForm):
         widgets = {
             "open_time": forms.TimeInput(attrs={"type": "time"}),
             "close_time": forms.TimeInput(attrs={"type": "time"}),
+        }
+
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ["rating", "comment"]
+        widgets = {
+            "rating": forms.RadioSelect(choices=[(i, f"{i} star{'s' if i > 1 else ''}") for i in range(1, 6)]),
+            "comment": forms.Textarea(attrs={"rows": 3, "placeholder": "Tell us about your experience..."}),
+        }
+
+
+class ReviewReplyForm(forms.ModelForm):
+    class Meta:
+        model = ReviewReply
+        fields = ["comment"]
+        widgets = {
+            "comment": forms.Textarea(attrs={"rows": 2, "placeholder": "Write a reply..."}),
         }

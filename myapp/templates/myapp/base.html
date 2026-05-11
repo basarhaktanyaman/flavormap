@@ -58,6 +58,12 @@
                     <a class="nav-link" href="{% url 'myapp:contact' %}"><i class="bi bi-envelope"></i> Contact</a>
                 </li>
                 {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'myapp:restaurant_create' %}">
+                            <i class="bi bi-plus-circle"></i>
+                            {% if user.is_staff %}Add Restaurant{% else %}Submit Restaurant{% endif %}
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ user.username }}

@@ -12,13 +12,25 @@
     </ol>
 </nav>
 
+{% if not restaurant.is_verified %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+    <i class="bi bi-hourglass-split fs-5"></i>
+    <div>
+        <strong>Awaiting admin verification.</strong>
+        This restaurant is not yet visible to the public. It will appear on the site once an admin approves it.
+    </div>
+</div>
+{% endif %}
+
 <div class="row g-4">
     <!-- Main Info -->
     <div class="col-lg-8">
         <div class="card p-4">
-            {% if restaurant.image_url %}
-            <img src="{{ restaurant.image_url }}" class="rounded mb-3" alt="{{ restaurant.name }}" style="width:100%;max-height:350px;object-fit:cover;">
+            {% with img=restaurant.display_image %}
+            {% if img %}
+            <img src="{{ img }}" class="rounded mb-3" alt="{{ restaurant.name }}" style="width:100%;max-height:350px;object-fit:cover;">
             {% endif %}
+            {% endwith %}
 
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <h1 class="fw-bold mb-0">{{ restaurant.name }}</h1>
@@ -31,10 +43,60 @@
                 {% if avg_rating %}
                 <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> {{ avg_rating }}/5</span>
                 {% endif %}
+                {% if restaurant.owner %}
+                <span class="badge bg-light text-dark"><i class="bi bi-person"></i> Listed by {{ restaurant.owner.username }}</span>
+                {% endif %}
             </div>
 
             <p class="lead">{{ restaurant.description }}</p>
+
+            {% if can_edit %}
+            <div class="d-flex gap-2 mt-3 border-top pt-3">
+                <a href="{% url 'myapp:restaurant_edit' restaurant.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+                <a href="{% url 'myapp:opening_hours_edit' restaurant.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clock"></i> Hours</a>
+                <a href="{% url 'myapp:menu_item_create' restaurant.pk %}" class="btn btn-outline-success btn-sm"><i class="bi bi-plus-circle"></i> Add Menu Item</a>
+                <a href="{% url 'myapp:restaurant_delete' restaurant.pk %}" class="btn btn-outline-danger btn-sm ms-auto"><i class="bi bi-trash"></i> Delete</a>
+            </div>
+            {% endif %}
         </div>
+
+        <!-- Menu -->
+        {% if menu_items %}
+        <div class="card p-4 mt-4">
+            <h3 class="fw-bold mb-3"><i class="bi bi-menu-button-wide"></i> Menu</h3>
+            {% regroup menu_items by get_category_display as menu_groups %}
+            {% for group in menu_groups %}
+            <h6 class="text-muted mt-2">{{ group.grouper }}</h6>
+            <ul class="list-unstyled mb-3">
+                {% for item in group.list %}
+                <li class="d-flex justify-content-between border-bottom py-2">
+                    <div>
+                        <strong>{{ item.name }}</strong>
+                        {% if item.description %}<small class="d-block text-muted">{{ item.description }}</small>{% endif %}
+                    </div>
+                    <div class="text-end">
+                        <span class="fw-bold">{{ item.price }} ₺</span>
+                        {% if can_edit %}
+                        <div class="mt-1">
+                            <a href="{% url 'myapp:menu_item_edit' item.pk %}" class="btn btn-sm btn-link p-0"><i class="bi bi-pencil"></i></a>
+                            <form method="post" action="{% url 'myapp:menu_item_delete' item.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-link p-0 text-danger" onclick="return confirm('Remove this item?');"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endfor %}
+        </div>
+        {% elif can_edit %}
+        <div class="card p-4 mt-4 text-center">
+            <p class="text-muted mb-2">No menu items yet.</p>
+            <a href="{% url 'myapp:menu_item_create' restaurant.pk %}" class="btn btn-fm btn-sm"><i class="bi bi-plus-circle"></i> Add the first menu item</a>
+        </div>
+        {% endif %}
 
         <!-- Reviews -->
         <div class="card p-4 mt-4">
@@ -100,6 +162,20 @@
                 </li>
             </ul>
         </div>
+
+        {% if opening_hours %}
+        <div class="card p-4 mt-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-clock"></i> Opening Hours</h6>
+            <table class="table table-sm mb-0">
+                {% for oh in opening_hours %}
+                <tr>
+                    <td class="small">{{ oh.get_day_display }}</td>
+                    <td class="small text-end {% if oh.is_closed %}text-danger{% endif %}">{{ oh.display_hours }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
 
         <div class="card p-4 mt-3 text-center">
             <p class="mb-2 fw-semibold">Average Rating</p>

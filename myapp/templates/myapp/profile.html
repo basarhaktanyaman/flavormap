@@ -1,0 +1,119 @@
+{% extends "myapp/base.html" %}
+
+{% block title %}My Profile – FinDish{% endblock %}
+
+{% block content %}
+<h1 class="fw-bold mb-4"><i class="bi bi-person-circle"></i> My Profile</h1>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card p-4 text-center">
+            {% if profile_obj.avatar %}
+            <img src="{{ profile_obj.avatar.url }}" class="rounded-circle mx-auto mb-3" style="width:120px;height:120px;object-fit:cover;">
+            {% else %}
+            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3" style="width:120px;height:120px;">
+                <i class="bi bi-person fs-1 text-muted"></i>
+            </div>
+            {% endif %}
+            <h5 class="fw-bold mb-0">{{ user.username }}</h5>
+            {% if user.email %}<p class="text-muted small">{{ user.email }}</p>{% endif %}
+            {% if profile_obj.bio %}<p class="small mt-2">{{ profile_obj.bio }}</p>{% endif %}
+            <p class="small text-muted">
+                <i class="bi bi-chat-quote"></i> {{ user_reviews|length }} reviews ·
+                <i class="bi bi-heart-fill text-danger"></i> {{ favorites|length }} favorites
+            </p>
+        </div>
+
+        <div class="card p-4 mt-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-pencil"></i> Edit Profile</h6>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}<div class="text-danger small">{{ field.errors|join:" " }}</div>{% endif %}
+                </div>
+                {% endfor %}
+                <button class="btn btn-fm btn-sm w-100"><i class="bi bi-check2-circle"></i> Save</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if pending %}
+        <div class="card p-4 mb-3 border-warning">
+            <h5 class="fw-bold mb-3 text-warning"><i class="bi bi-hourglass-split"></i> Pending Approval</h5>
+            <p class="small text-muted">These submissions are awaiting admin verification before they appear publicly.</p>
+            <ul class="list-group list-group-flush">
+                {% for r in pending %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'myapp:restaurant_detail' r.pk %}">{{ r.name }}</a>
+                    <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pending</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if published %}
+        <div class="card p-4 mb-3">
+            <h5 class="fw-bold mb-3"><i class="bi bi-shop"></i> My Published Restaurants</h5>
+            <ul class="list-group list-group-flush">
+                {% for r in published %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'myapp:restaurant_detail' r.pk %}">{{ r.name }}</a>
+                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Live</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="card p-4 mb-3">
+            <h5 class="fw-bold mb-3"><i class="bi bi-chat-left-quote"></i> My Reviews</h5>
+            {% if user_reviews %}
+                {% for review in user_reviews %}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'myapp:restaurant_detail' review.restaurant.pk %}" class="fw-bold">{{ review.restaurant.name }}</a>
+                        <span class="rating-stars">
+                            {% for i in "12345" %}{% if forloop.counter <= review.rating %}<i class="bi bi-star-fill"></i>{% else %}<i class="bi bi-star"></i>{% endif %}{% endfor %}
+                        </span>
+                    </div>
+                    {% if review.comment %}<p class="small mb-1 mt-1">{{ review.comment }}</p>{% endif %}
+                    <small class="text-muted">{{ review.created_at|date:"d M Y" }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted small">You haven't written any reviews yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-heart-fill text-danger"></i> Favorites</h5>
+            {% if favorites %}
+                <ul class="list-group list-group-flush">
+                {% for f in favorites %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'myapp:restaurant_detail' f.restaurant.pk %}">{{ f.restaurant.name }}</a>
+                    <small class="text-muted">{{ f.created_at|date:"d M Y" }}</small>
+                </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted small">No favorites yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    form input[type="text"], form input[type="file"], form textarea {
+        width: 100%; padding: .5rem .75rem; border: 1px solid #ced4da;
+        border-radius: .5rem; font-size: .95rem; background: #fff;
+    }
+</style>
+{% endblock %}

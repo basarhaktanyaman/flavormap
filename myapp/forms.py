@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import Profile
+from .models import MenuItem, OpeningHours, Profile, Restaurant
 
 User = get_user_model()
 
@@ -29,4 +29,44 @@ class ProfileForm(forms.ModelForm):
         fields = ["bio", "avatar"]
         widgets = {
             "bio": forms.Textarea(attrs={"rows": 3, "placeholder": "A short bio..."}),
+        }
+
+
+class RestaurantForm(forms.ModelForm):
+    class Meta:
+        model = Restaurant
+        fields = [
+            "name",
+            "description",
+            "address",
+            "phone",
+            "price_range",
+            "category",
+            "location",
+            "image",
+            "image_url",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "address": forms.TextInput(attrs={"placeholder": "Street, building, etc."}),
+            "phone": forms.TextInput(attrs={"placeholder": "+90 ..."}),
+        }
+
+
+class MenuItemForm(forms.ModelForm):
+    class Meta:
+        model = MenuItem
+        fields = ["name", "description", "price", "category"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 2}),
+        }
+
+
+class OpeningHoursForm(forms.ModelForm):
+    class Meta:
+        model = OpeningHours
+        fields = ["day", "open_time", "close_time", "is_closed"]
+        widgets = {
+            "open_time": forms.TimeInput(attrs={"type": "time"}),
+            "close_time": forms.TimeInput(attrs={"type": "time"}),
         }

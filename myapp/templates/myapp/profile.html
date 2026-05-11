@@ -37,10 +37,41 @@
     </div>
 
     <div class="col-lg-8">
+        {% if pending %}
+        <div class="card p-4 mb-3 border-warning">
+            <h5 class="fw-bold mb-3 text-warning"><i class="bi bi-hourglass-split"></i> Pending Approval</h5>
+            <p class="small text-muted">These submissions are awaiting admin verification before they appear publicly.</p>
+            <ul class="list-group list-group-flush">
+                {% for r in pending %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'myapp:restaurant_detail' r.pk %}">{{ r.name }}</a>
+                    <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pending</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if published %}
+        <div class="card p-4 mb-3">
+            <h5 class="fw-bold mb-3"><i class="bi bi-shop"></i> My Published Restaurants</h5>
+            <ul class="list-group list-group-flush">
+                {% for r in published %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'myapp:restaurant_detail' r.pk %}">{{ r.name }}</a>
+                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Live</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if not pending and not published %}
         <div class="card p-4">
             <h5 class="fw-bold mb-3"><i class="bi bi-info-circle"></i> Welcome, {{ user.username }}!</h5>
-            <p class="text-muted">This is your profile page. As more features are added by the team (reviews, favorites, restaurant management), your activity will show up here.</p>
+            <p class="text-muted">You don't have any restaurants yet. <a href="{% url 'myapp:restaurant_create' %}">Submit one</a> to get started.</p>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

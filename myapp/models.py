@@ -1,5 +1,6 @@
-from django.db import models
+from django.conf import settings
 from django.core.validators import RegexValidator
+from django.db import models
 
 
 class Category(models.Model):
@@ -77,3 +78,15 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.author_name} – {self.restaurant.name} ({self.rating}/5)"
+
+
+class Profile(models.Model):
+    """Optional bio/avatar attached to a user."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    bio = models.TextField(blank=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Profile of {self.user}"

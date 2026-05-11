@@ -1,5 +1,14 @@
-from django.shortcuts import render, get_object_or_404
-from .models import Restaurant, Category
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
+
+from .forms import ProfileForm, UserRegistrationForm
+from .models import Category, Profile, Restaurant
+
+
+# ----- Public pages -----------------------------------------------------------
 
 
 def home(request):
@@ -14,26 +23,10 @@ def home(request):
 
 def restaurant_list(request):
     restaurants = Restaurant.objects.select_related("category", "location").all()
-
-    category_id = request.GET.get("category")
-    city = request.GET.get("city")
-    price = request.GET.get("price")
-
-    if category_id:
-        restaurants = restaurants.filter(category_id=category_id)
-    if city:
-        restaurants = restaurants.filter(location__city=city)
-    if price:
-        restaurants = restaurants.filter(price_range=price)
-
     categories = Category.objects.all()
-
     context = {
         "restaurants": restaurants,
         "categories": categories,
-        "selected_category": category_id,
-        "selected_city": city,
-        "selected_price": price,
     }
     return render(request, "myapp/restaurant_list.html", context)
 
@@ -58,3 +51,51 @@ def about(request):
 
 def contact(request):
     return render(request, "myapp/contact.html")
+
+
+# ----- Auth -------------------------------------------------------------------
+
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect("myapp:home")
+
+    if request.method == "POST":
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                user = form.save()
+                Profile.objects.create(user=user)
+            login(request, user)
+            messages.success(request, f"Welcome, {user.username}! Your account has been created.")
+            return redirect("myapp:home")
+    else:
+        form = UserRegistrationForm()
+
+    return render(request, "registration/register.html", {"form": form})
+
+
+# ----- Profile ----------------------------------------------------------------
+
+
+@login_required
+def profile(request):
+    profile_obj, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = ProfileForm(request.POST, request.FILES, instance=profile_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated.")
+            return redirect("myapp:profile")
+    else:
+        form = ProfileForm(instance=profile_obj)
+
+    return render(
+        request,
+        "myapp/profile.html",
+        {
+            "form": form,
+            "profile_obj": profile_obj,
+        },
+    )

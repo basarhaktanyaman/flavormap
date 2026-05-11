@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Category, Location, Restaurant, Review
+
+from .models import Category, Location, Profile, Restaurant, Review
 
 
 @admin.register(Category)
@@ -38,3 +39,9 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = ["restaurant", "author_name", "rating", "created_at"]
     list_filter = ["rating"]
     search_fields = ["author_name", "comment"]
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ["user", "created_at"]
+    search_fields = ["user__username"]
